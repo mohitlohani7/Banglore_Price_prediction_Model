@@ -1,32 +1,58 @@
-import streamlit as st
-import pickle
-import numpy as np
+from flask import Flask, request, render_template, jsonify
+from flask_cors import cross_origin
 
-# Load the trained model
-with open('banglore_home_prices_model.pickle', 'rb') as f:
-    model = pickle.load(f)
+import BangalorePricePrediction as tm
 
-# Title
-st.title("🏠 Bangalore House Price Predictor")
-st.subheader("Enter the details of the property below:")
+app = Flask(__name__)
 
-# Input Fields
-area = st.number_input("Total Area (in sqft)", min_value=300, max_value=10000, step=10)
-bhk = st.selectbox("BHK (Bedrooms)", [1, 2, 3, 4, 5])
-bath = st.selectbox("Bathrooms", [1, 2, 3, 4])
+@app.route('/get_location_names', methods=['GET'])
+def get_location_names():
+    response = jsonify({
+        'locations': tm.get_location_names()
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
-# Location input dropdown
-location = st.selectbox("Location", ['Whitefield', 'Electronic City', 'Indiranagar', 'Koramangala', 'Other'])
+@app.route('/get_area_names', methods=['GET'])
+def get_area_names():
+    response = jsonify({
+        'area': tm.get_area_values()
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
-# Encode location (Assuming model expects encoded value, adjust if required)
-# Example of location encoding (you need to adjust as per model's requirements)
-location_dict = {'Whitefield': 0, 'Electronic City': 1, 'Indiranagar': 2, 'Koramangala': 3, 'Other': 4}
-location_encoded = location_dict.get(location, 4)
+@app.route('/get_availability_names', methods=['GET'])
+def get_availability_names():
+    response = jsonify({
+        'availability': tm.get_availability_values()
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
-# Prepare input data
-input_data = np.array([[area, bhk, bath, location_encoded]])
+@app.route("/")
+@cross_origin()
+def home():
+    return render_template("home.html")
 
-# Predict price button
-if st.button("Predict Price"):
-    prediction = model.predict(input_data)[0]
-    st.success(f"🏡 Estimated Price: ₹ {round(prediction, 2)} Lakhs")
+
+@app.route("/predict", methods=["GET", "POST"])
+#@cross_origin()
+def predict():
+    if request.method == "POST":
+        sqft = float(request.form['sqft'])
+        bhk = int(request.form['bhk'])
+        bath = int(request.form['bath'])
+        loc = request.form.get('loc')
+        area = request.form.get('area')
+        availability = request.form.get('avail')
+
+        prediction = round(float(tm.predict_house_price(loc, area, availability, sqft, bhk, bath)), 2)
+
+        return render_template('home.html', prediction_text="The house price is Rs. {} lakhs".format(prediction))
+
+    return render_template("home.html")
+
+
+if __name__ == "__main__":
+    tm.load_saved_attributes()
+    app.run(debug = True)
