@@ -1,7 +1,4 @@
-Got it! Here's a **clean, concise summary** of the **important things you've done in the Jupyter Notebook**, highlighting just the key steps and contributions — ideal for showcasing your work quickly:
-
----
-
+Bangalore-Housing-Price-Prediction
 # ✅ Key Contributions from the Jupyter Notebook
 
 ### 📌 1. **Data Cleaning & Preprocessing**
@@ -39,7 +36,3 @@ Got it! Here's a **clean, concise summary** of the **important things you've don
 ### 📂 5. **Project Ready for Deployment**
 - Model and metadata files (`.pickle` and `.json`) created.
 - Environment reproducibility ensured using `environment.yml`.
-
----
-
-Let me know if you want this turned into a slide or presentation summary too — would look awesome in a portfolio or project pitch!
