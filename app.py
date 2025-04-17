@@ -1,58 +1,64 @@
-from flask import Flask, request, render_template, jsonify
-from flask_cors import cross_origin
+import streamlit as st
+import pickle
+import numpy as np
+import json
 
-import BangalorePricePrediction as tm
+# Load model
+with open('banglore_home_prices_model.pickle', 'rb') as f:
+    model = pickle.load(f)
 
-app = Flask(__name__)
+# Load columns data
+with open("columns.json", "r") as f:
+    columns_data = json.load(f)
 
-@app.route('/get_location_names', methods=['GET'])
-def get_location_names():
-    response = jsonify({
-        'locations': tm.get_location_names()
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+# Extract location, area, and availability columns
+locations = columns_data['location_columns']
+areas = columns_data['area_columns']
+availability_options = columns_data['availability_columns']
 
-@app.route('/get_area_names', methods=['GET'])
-def get_area_names():
-    response = jsonify({
-        'area': tm.get_area_values()
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+# Title
+st.title("🏡 Bangalore House Price Prediction")
+st.markdown("A simple ML-powered app to estimate house prices in Bangalore.")
 
-@app.route('/get_availability_names', methods=['GET'])
-def get_availability_names():
-    response = jsonify({
-        'availability': tm.get_availability_values()
-    })
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    return response
+# Input Section
+st.header("📋 Enter Property Details:")
 
-@app.route("/")
-@cross_origin()
-def home():
-    return render_template("home.html")
+location = st.selectbox("📍 Location", sorted(locations))
+area_type = st.selectbox("🏗️ Area Type", sorted(areas))
+availability = st.selectbox("📆 Availability", sorted(availability_options))
+sqft = st.number_input("📐 Square Footage", min_value=300, max_value=10000, step=10)
+bhk = st.selectbox("🛏️ BHK (Bedrooms)", [1, 2, 3, 4, 5])
+bath = st.selectbox("🛁 Bathrooms", [1, 2, 3, 4])
 
+# Preprocess input to match training data structure
+def preprocess_input(location, area_type, availability, sqft, bhk, bath):
+    # Assuming the model expects a one-hot encoded vector
+    input_data = np.zeros(len(locations) + len(areas) + len(availability_options) + 3)
 
-@app.route("/predict", methods=["GET", "POST"])
-#@cross_origin()
-def predict():
-    if request.method == "POST":
-        sqft = float(request.form['sqft'])
-        bhk = int(request.form['bhk'])
-        bath = int(request.form['bath'])
-        loc = request.form.get('loc')
-        area = request.form.get('area')
-        availability = request.form.get('avail')
+    # Set basic features
+    input_data[0] = sqft
+    input_data[1] = bhk
+    input_data[2] = bath
 
-        prediction = round(float(tm.predict_house_price(loc, area, availability, sqft, bhk, bath)), 2)
+    # Encode location
+    if location in locations:
+        loc_index = locations.index(location)
+        input_data[3 + loc_index] = 1
 
-        return render_template('home.html', prediction_text="The house price is Rs. {} lakhs".format(prediction))
+    # Encode area type
+    if area_type in areas:
+        area_index = areas.index(area_type)
+        input_data[3 + len(locations) + area_index] = 1
 
-    return render_template("home.html")
+    # Encode availability
+    if availability in availability_options:
+        avail_index = availability_options.index(availability)
+        input_data[3 + len(locations) + len(areas) + avail_index] = 1
 
+    return input_data.reshape(1, -1)
 
-if __name__ == "__main__":
-    tm.load_saved_attributes()
-    app.run(debug = True)
+# Predict Button
+if st.button("🚀 Estimate Price"):
+    input_features = preprocess_input(location, area_type, availability, sqft, bhk, bath)
+    price = model.predict(input_features)[0]
+    st.success(f"🏷️ Estimated Price: ₹ {round(price, 2)} Lakhs")
