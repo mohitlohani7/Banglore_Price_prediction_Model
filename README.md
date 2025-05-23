@@ -57,7 +57,7 @@ All models were evaluated using:
 ## 🌐 Deployment (Outside Jupyter)
 - After model testing in Jupyter, integrated the model into a web app using **Streamlit**
 - Deployed to the cloud at:  
-  👉 [Live Demo](https://banglorepricepredictionmodel-6ywekmwevqmyk2yxdtr3ek.streamlit.app/)
+  👉 [Live Demo](https://banglorepricepredictionmodel-maeygznd2fmnogvyxjtcwq.streamlit.app/)
 
 ---
 
